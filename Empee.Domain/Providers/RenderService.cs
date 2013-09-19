@@ -20,8 +20,8 @@ using RectangleF = SharpDX.RectangleF;
 
 namespace Empee.Domain.Providers
 {
-    [Export(typeof (IGraphicsService))]
-    internal sealed class GraphicsService : IGraphicsService
+    [Export(typeof (IRenderService))]
+    internal sealed class RenderService : IRenderService
     {
         private const SwapChainFlags DefaultSwapChainFlags = SwapChainFlags.AllowModeSwitch;
 
@@ -34,7 +34,7 @@ namespace Empee.Domain.Providers
         private SwapChain _swapChain;
 
         [ImportingConstructor]
-        public GraphicsService(IExecutionLoopService executionLoopService)
+        public RenderService(IExecutionLoopService executionLoopService)
         {
             executionLoopService.Starting += ExecutionLoopServiceOnStarting;
             executionLoopService.Executing += ExecutionLoopServiceOnExecuting;
@@ -126,17 +126,10 @@ namespace Empee.Domain.Providers
             // Allegedly DXGI doesn't play nice with WinForms: http://slimdx.org/tutorials/DeviceCreation.php
             using (var dxgiFactory = _swapChain.GetParent<DXGIFactory>())
                 dxgiFactory.MakeWindowAssociation(_renderControl.Handle, WindowAssociationFlags.IgnoreAltEnter);
-
-            // We assume adding events cannot fail
-            _renderControl.KeyDown += RenderControlOnKeyDown;
-            _renderControl.Resize += RenderControlOnResize;
         }
 
-        private void RenderControlOnKeyDown(object sender, KeyEventArgs keyEventArgs)
+        public void ToggleFullScreen()
         {
-            if (!(keyEventArgs.Alt && keyEventArgs.KeyCode == Keys.Enter))
-                return;
-
             if (_swapChain.IsFullScreen)
             {
                 _swapChain.IsFullScreen = false;
@@ -157,7 +150,7 @@ namespace Empee.Domain.Providers
             }
         }
 
-        private void RenderControlOnResize(object sender, EventArgs eventArgs)
+        public void Resize()
         {
             DisposeRenderTarget();
 
@@ -203,10 +196,6 @@ namespace Empee.Domain.Providers
 
         private void BreakWindowAssociation()
         {
-            // We assume removing events cannot fail
-            _renderControl.Resize -= RenderControlOnResize;
-            _renderControl.KeyDown -= RenderControlOnKeyDown;
-
             using (var dxgiFactory = _swapChain.GetParent<DXGIFactory>())
                 dxgiFactory.MakeWindowAssociation(IntPtr.Zero, WindowAssociationFlags.None);
         }

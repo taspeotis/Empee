@@ -1,30 +1,34 @@
 ﻿using System;
 using System.ComponentModel.Composition;
 using System.Diagnostics;
-using System.Windows.Forms;
 using Empee.Domain.Contracts;
 using Empee.Domain.Infrastructure;
 using SharpDX.Windows;
 
 namespace Empee.Domain.Providers
 {
-    [Export(typeof(IExecutionLoopService))]
+    [Export(typeof (IExecutionLoopService))]
     internal sealed class ExecutionLoopService : IExecutionLoopService
     {
         private static readonly double Frequency = Stopwatch.Frequency;
 
+        private readonly IContext _context;
         private readonly Stopwatch _stopwatch = new Stopwatch();
 
         private long _lastElapsedTicks;
 
         [ImportingConstructor]
-        public ExecutionLoopService()
+        public ExecutionLoopService(IContext context)
         {
+            _context = context;
+
             _stopwatch.Start();
         }
 
-        public void Run(Control renderControl)
+        public void Run()
         {
+            var renderControl = _context.RenderControl;
+
             OnStarting(new StartingEventArgs(renderControl));
 
             try
@@ -39,9 +43,15 @@ namespace Empee.Domain.Providers
             }
             finally
             {
-                OnStopping();   
+                OnStopping();
             }
         }
+
+        public event StartingEventHandler Starting;
+
+        public event ExecutingEventHandler Executing;
+
+        public event StoppingEventHandler Stopping;
 
         private void RenderCallback()
         {
@@ -54,8 +64,6 @@ namespace Empee.Domain.Providers
             _lastElapsedTicks = elapsedTicks;
         }
 
-        public event StartingEventHandler Starting;
-
         private void OnStarting(StartingEventArgs startingEventArgs)
         {
             var eventHandler = Starting;
@@ -64,8 +72,6 @@ namespace Empee.Domain.Providers
                 eventHandler(this, startingEventArgs);
         }
 
-        public event ExecutingEventHandler Executing;
-
         private void OnExecuting(ExecutingEventArgs executingEventArgs)
         {
             var eventHandler = Executing;
@@ -73,8 +79,6 @@ namespace Empee.Domain.Providers
             if (eventHandler != null)
                 eventHandler(this, executingEventArgs);
         }
-
-        public event StoppingEventHandler Stopping;
 
         private void OnStopping()
         {

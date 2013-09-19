@@ -18,11 +18,9 @@ namespace Showcase
 
             using (var compositionContainer = Bootstrapper.CreateCompositionContainer())
             {
-                // hack for now
-                compositionContainer.GetExportedValue<IGraphicsService>();
-                var executionLoopService = compositionContainer.GetExportedValue<IExecutionLoopService>();
+                var defaultBehaviors = compositionContainer.GetExportedValue<IDefaultBehaviors>();
 
-                executionLoopService.Run(new Form {Text = @"Test Window"});
+                defaultBehaviors.AcceptDefaultBehaviors("Empee Showcase");
             }
         }
     }

@@ -5,7 +5,7 @@ namespace Empee.Domain.Contracts
 {
     public interface IExecutionLoopService
     {
-        void Run(Control renderControl);
+        void Run();
 
         event StartingEventHandler Starting;
 
