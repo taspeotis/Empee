@@ -5,11 +5,11 @@ namespace Empee.Domain.Infrastructure
 {
     public sealed class RenderingEventArgs : EventArgs
     {
-        public RenderingEventArgs(IDrawingOperations drawingOperations)
+        public RenderingEventArgs(IDrawingService drawingService)
         {
-            DrawingOperations = drawingOperations;
+            DrawingService = drawingService;
         }
 
-        public IDrawingOperations DrawingOperations { get; private set; }
+        public IDrawingService DrawingService { get; private set; }
     }
 }

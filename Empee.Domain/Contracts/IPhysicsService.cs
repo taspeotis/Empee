@@ -2,6 +2,8 @@
 {
     public interface IPhysicsService
     {
-         float Gravity { get; set; }
+        float Gravity { get; set; }
+
+        bool Visible { get; set; }
     }
 }
