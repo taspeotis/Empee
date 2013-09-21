@@ -21,7 +21,7 @@ using RectangleF = SharpDX.RectangleF;
 namespace Empee.Domain.Providers
 {
     [Export(typeof (IRenderService))]
-    internal sealed class RenderService : IRenderService
+    internal sealed class RenderService : IRenderService, IDrawingOperations
     {
         private const SwapChainFlags DefaultSwapChainFlags = SwapChainFlags.AllowModeSwitch;
 
@@ -150,6 +150,16 @@ namespace Empee.Domain.Providers
             }
         }
 
+        public event RenderingEventHandler Rendering;
+
+        private void OnRendering(RenderingEventArgs renderingEventArgs)
+        {
+            var eventHandler = Rendering;
+
+            if (eventHandler != null)
+                eventHandler(this, renderingEventArgs);
+        }
+
         public void Resize()
         {
             DisposeRenderTarget();
@@ -168,6 +178,8 @@ namespace Empee.Domain.Providers
             _renderTarget.BeginDraw();
             _renderTarget.Transform = Matrix3x2.Identity;
             _renderTarget.Clear(Color.White);
+
+            OnRendering(new RenderingEventArgs(this));
 
             if (framesPerSecond > 0)
             {
@@ -225,6 +237,11 @@ namespace Empee.Domain.Providers
                 _device.Dispose();
                 _device = null;
             }
+        }
+
+        public void DrawCircle(float x, float y, float radius)
+        {
+            throw new NotImplementedException();
         }
     }
 }

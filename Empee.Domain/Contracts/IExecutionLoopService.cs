@@ -1,5 +1,4 @@
-﻿using System.Windows.Forms;
-using Empee.Domain.Infrastructure;
+﻿using Empee.Domain.Infrastructure;
 
 namespace Empee.Domain.Contracts
 {

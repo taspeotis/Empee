@@ -32,6 +32,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="FarseerPhysics">
+      <HintPath>..\packages\FarseerPhysics.3.5.0\lib\NET40\FarseerPhysics.dll</HintPath>
+    </Reference>
     <Reference Include="SharpDX, Version=2.5.0.0, Culture=neutral, PublicKeyToken=627a3d6d1956f55a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\SharpDX.2.5.0\lib\net40\SharpDX.dll</HintPath>
@@ -58,10 +61,14 @@
   <ItemGroup>
     <Compile Include="Contracts\IContext.cs" />
     <Compile Include="Contracts\IDefaultBehaviors.cs" />
+    <Compile Include="Contracts\IDrawingOperations.cs" />
     <Compile Include="Contracts\IExecutionLoopService.cs" />
+    <Compile Include="Contracts\IPhysicsService.cs" />
     <Compile Include="Contracts\IRenderService.cs" />
     <Compile Include="Infrastructure\ExecutingEventArgs.cs" />
     <Compile Include="Infrastructure\ExecutingEventHandler.cs" />
+    <Compile Include="Infrastructure\RenderingEventArgs.cs" />
+    <Compile Include="Infrastructure\RenderingEventHandler.cs" />
     <Compile Include="Infrastructure\StartingEventArgs.cs" />
     <Compile Include="Infrastructure\StartingEventHandler.cs" />
     <Compile Include="Infrastructure\StoppingEventHandler.cs" />
@@ -69,6 +76,7 @@
     <Compile Include="Providers\Context.cs" />
     <Compile Include="Providers\DefaultBehaviors.cs" />
     <Compile Include="Providers\ExecutionLoopService.cs" />
+    <Compile Include="Providers\PhysicsService.cs" />
     <Compile Include="Providers\RenderService.cs" />
   </ItemGroup>
   <ItemGroup>

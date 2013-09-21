@@ -11,16 +11,19 @@ namespace Empee.Domain.Providers
         private readonly IContext _context;
         private readonly IExecutionLoopService _executionLoopService;
         private readonly IRenderService _renderService;
+        private readonly IPhysicsService _physicsService;
 
         [ImportingConstructor]
         public DefaultBehaviors(
             IContext context,
             IExecutionLoopService executionLoopService,
-            IRenderService renderService)
+            IRenderService renderService,
+            IPhysicsService physicsService)
         {
             _context = context;
             _executionLoopService = executionLoopService;
             _renderService = renderService;
+            _physicsService = physicsService;
         }
 
         public void AcceptDefaultBehaviors(string controlText)
@@ -28,6 +31,8 @@ namespace Empee.Domain.Providers
             AcceptDefaultRenderControl(controlText);
             AcceptDefaultResize();
             AcceptDefaultToggleFullScreen();
+
+            AcceptDefaultGravity();
 
             _executionLoopService.Run();
         }
@@ -56,6 +61,11 @@ namespace Empee.Domain.Providers
         {
             if (keyEventArgs.Alt && keyEventArgs.KeyCode == Keys.Enter)
                 _renderService.ToggleFullScreen();
+        }
+
+        public void AcceptDefaultGravity()
+        {
+            _physicsService.Gravity = 9.80665f;
         }
     }
 }

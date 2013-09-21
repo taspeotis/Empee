@@ -12,5 +12,7 @@
         void AcceptDefaultResize();
 
         void AcceptDefaultToggleFullScreen();
+
+        void AcceptDefaultGravity();
     }
 }
