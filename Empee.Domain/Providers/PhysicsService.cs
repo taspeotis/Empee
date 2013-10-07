@@ -1,11 +1,13 @@
 ﻿using System;
 using System.ComponentModel.Composition;
-using System.Diagnostics;
 using Empee.Domain.Contracts;
 using Empee.Domain.Infrastructure;
+using FarseerPhysics.Collision.Shapes;
+using FarseerPhysics.Common;
 using FarseerPhysics.Dynamics;
 using FarseerPhysics.Factories;
-using Microsoft.Xna.Framework;
+using SharpDX;
+using Vector2 = Microsoft.Xna.Framework.Vector2;
 
 namespace Empee.Domain.Providers
 {
@@ -13,16 +15,13 @@ namespace Empee.Domain.Providers
     internal sealed class PhysicsService : IPhysicsService
     {
         private readonly IContext _context;
-        private Body _circleBody;
 
+        private Body _circleBody;
         private Body _ground;
         private World _world;
 
         [ImportingConstructor]
-        public PhysicsService(
-            IContext context,
-            IExecutionLoopService executionLoopService,
-            IRenderService renderService)
+        public PhysicsService(IContext context, IExecutionLoopService executionLoopService, IRenderService renderService)
         {
             _context = context;
 
@@ -50,7 +49,8 @@ namespace Empee.Domain.Providers
             _ground.Friction = 0.5f;
         }
 
-        private int LastSecond;
+        private int _lastSecond;
+
 
         private void ExecutionLoopServiceOnExecuting(object sender, ExecutingEventArgs executingEventArgs)
         {
@@ -62,12 +62,12 @@ namespace Empee.Domain.Providers
             var modSecond = thisSecond%3;
             thisSecond -= modSecond;
 
-            if (thisSecond == LastSecond)
+            if (thisSecond == _lastSecond)
                 return;
 
             try
             {
-                if (LastSecond == 0)
+                if (_lastSecond == 0)
                     return;
 
                 var x = _circleBody.Position.X;
@@ -85,11 +85,11 @@ namespace Empee.Domain.Providers
                 var random = new Random();
                 var mult = (float) random.NextDouble()*2 + 0.5f;
 
-                _circleBody.ApplyLinearImpulse(new Vector2(x > 0 ? -50f*mult : 50f*mult, -50f));
+                _circleBody.ApplyLinearImpulse(new Vector2(x > 0 ? -50f*mult : 50f*mult, 150f + 20*mult));
             }
             finally
             {
-                LastSecond = thisSecond;                
+                _lastSecond = thisSecond;                
             }
         }
 
@@ -102,33 +102,120 @@ namespace Empee.Domain.Providers
 
             var drawingService = renderingEventArgs.DrawingService;
 
-            SetCoordinateTransforms(drawingService);
+            SetTransforms(drawingService);
 
-            drawingService.DrawCircle(
-                _circleBody.Position.X,
-                _circleBody.Position.Y,
-                _circleBody.FixtureList[0].Shape.Radius*16.0f);
+            foreach (var body in _world.BodyList)
+                RenderBody(drawingService, body);
         }
 
-        private void SetCoordinateTransforms(IDrawingService drawingService)
+        private void SetTransforms(IDrawingService drawingService)
         {
             var viewport = _context.RenderControl.ClientSize;
             var viewportWidth = (float) viewport.Width;
             var viewportHeight = (float) viewport.Height;
 
-            if (viewportWidth <= 0 || viewportHeight <= 0)
-            {
-                drawingService.TransformXCoordinate = null;
-                drawingService.TransformYCoordinate = null;
-
-                return;
-            }
-
             // This should be in IContext??
             const float pixelsPerMeter = 16.0f;
 
-            drawingService.TransformXCoordinate = x => viewportWidth/2 + x*pixelsPerMeter;
-            drawingService.TransformYCoordinate = y => viewportHeight + y*pixelsPerMeter;
+            drawingService.TranslateXCoordinate = x => viewportWidth/2 + x*pixelsPerMeter;
+            drawingService.TranslateYCoordinate = y => viewportHeight + y*pixelsPerMeter;
+
+            drawingService.ScaleXMagnitude = x => x*pixelsPerMeter;
+            drawingService.ScaleYMagnitude = y => y*pixelsPerMeter;
+        }
+
+        private static void RenderBody(IDrawingService drawingService, Body body)
+        {
+            var bodyTransform = GetBodyTransform(body);
+            var bodyColor = GetBodyColor(body);
+
+            foreach (var fixture in body.FixtureList)
+                RenderFixture(drawingService, fixture, bodyTransform, bodyColor);
+        }
+
+        private static Transform GetBodyTransform(Body body)
+        {
+            Transform bodyTransform;
+            body.GetTransform(out bodyTransform);
+            return bodyTransform;
+        }
+
+        private static readonly Color4 DefaultShapeColor = new Color4(0.9f, 0.7f, 0.7f, 1.0f);
+        private static readonly Color4 InactiveShapeColor = new Color4(0.5f, 0.5f, 0.3f, 1.0f);
+        private static readonly Color4 KinematicShapeColor = new Color4(0.5f, 0.5f, 0.9f, 1.0f);
+        private static readonly Color4 SleepingShapeColor = new Color4(0.6f, 0.6f, 0.6f, 1.0f);
+        private static readonly Color4 StaticShapeColor = new Color4(0.5f, 0.9f, 0.5f, 1.0f);
+
+        private static Color4 GetBodyColor(Body body)
+        {
+            if (!body.Enabled)
+                return InactiveShapeColor;
+
+            var bodyType = body.BodyType;
+
+            if (bodyType == BodyType.Static)
+                return StaticShapeColor;
+
+            if (bodyType == BodyType.Kinematic)
+                return KinematicShapeColor;
+
+            if (!body.Awake)
+                return SleepingShapeColor;
+
+            return DefaultShapeColor;
+        }
+
+        private static void RenderFixture(IDrawingService drawingService,
+            Fixture fixture, Transform bodyTransform, Color4 bodyColor)
+        {
+            drawingService.DrawColor = bodyColor;
+
+            switch (fixture.ShapeType)
+            {
+                case ShapeType.Circle:
+                {
+                    var circleShape = (CircleShape) fixture.Shape;
+                    var center = MathUtils.Mul(ref bodyTransform, circleShape.Position);
+                    var radius = circleShape.Radius;
+
+                    drawingService.DrawCircle(center.X, center.Y, radius);
+
+                    break;
+                }
+
+                case ShapeType.Edge:
+                {
+                    var edgeShape = (EdgeShape) fixture.Shape;
+                    var vertex1 = MathUtils.Mul(ref bodyTransform, edgeShape.Vertex1);
+                    var vertex2 = MathUtils.Mul(ref bodyTransform, edgeShape.Vertex2);
+
+                    drawingService.DrawLine(vertex1.X, vertex1.Y, vertex2.X, vertex2.Y);
+                    // TODO: Render Ghost Vertices (v0, v3)
+
+                    break;
+                }
+
+                case ShapeType.Polygon:
+                {
+                    break;
+                }
+
+                case ShapeType.Chain:
+                {
+                    var chainShape = (ChainShape) fixture.Shape;
+                    var vertices = chainShape.Vertices;
+
+                    for (var x = 0; x < vertices.Count - 1; ++x)
+                    {
+                        var vertex1 = MathUtils.Mul(ref bodyTransform, vertices[x]);
+                        var vertex2 = MathUtils.Mul(ref bodyTransform, vertices[x + 1]);
+
+                        drawingService.DrawLine(vertex1.X, vertex1.Y, vertex2.X, vertex2.Y);
+                    }
+
+                    break;
+                }
+            }
         }
     }
 }

@@ -9,65 +9,120 @@ namespace Empee.Domain.Providers
     {
         private readonly RenderTarget _renderTarget;
 
-        private Func<float, float> _transformXCoordinate = TransformCoordinateIdentity;
-
-        private Func<float, float> _transformYCoordinate = TransformCoordinateIdentity;
+        private Func<float, float> _scaleMagnitude = TransformIdentity;
+        private Func<float, float> _scaleXMagnitude = TransformIdentity;
+        private Func<float, float> _scaleYMagnitude = TransformIdentity;
+        private Func<float, float> _translateXCoordinate = TransformIdentity;
+        private Func<float, float> _translateYCoordinate = TransformIdentity;
 
         public DrawingService(RenderTarget renderTarget)
         {
             _renderTarget = renderTarget;
         }
 
-        public Func<float, float> TransformXCoordinate
+        public Color4 DrawColor { get; set; }
+
+        public Func<float, float> ScaleMagnitude
         {
-            get { return _transformXCoordinate; }
-            set { _transformXCoordinate = value ?? TransformCoordinateIdentity; }
+            get { return _scaleMagnitude; }
+            set { _scaleMagnitude = value ?? TransformIdentity; }
         }
 
-        public Func<float, float> TransformYCoordinate
+        public Func<float, float> ScaleXMagnitude
         {
-            get { return _transformYCoordinate; }
-            set { _transformYCoordinate = value ?? TransformCoordinateIdentity; }
+            get { return _scaleXMagnitude; }
+            set { _scaleXMagnitude = value ?? TransformIdentity; }
         }
 
-        public void DrawCircle(float x, float y, float radius)
+        public Func<float, float> ScaleYMagnitude
         {
-            var ellipse = MakeEllipse(x, y, radius);
+            get { return _scaleYMagnitude; }
+            set { _scaleYMagnitude = value ?? TransformIdentity; }
+        }
 
-            using (var brush = new SolidColorBrush(_renderTarget, Color4.Black))
+        public Func<float, float> TranslateXCoordinate
+        {
+            get { return _translateXCoordinate; }
+            set { _translateXCoordinate = value ?? TransformIdentity; }
+        }
+
+        public Func<float, float> TranslateYCoordinate
+        {
+            get { return _translateYCoordinate; }
+            set { _translateYCoordinate = value ?? TransformIdentity; }
+        }
+
+        public void DrawCircle(float xCenter, float yCenter, float radius)
+        {
+            DrawEllipse(xCenter, yCenter, radius, radius);
+        }
+
+        public void FillCircle(float xCenter, float yCenter, float radius)
+        {
+            FillEllipse(xCenter, yCenter, radius, radius);
+        }
+
+        public void FillDrawCircle(float xCenter, float yCenter, float radius)
+        {
+            FillCircle(xCenter, yCenter, radius);
+            DrawCircle(xCenter, yCenter, radius);
+        }
+
+        public void DrawEllipse(float xCenter, float yCenter, float xRadius, float yRadius)
+        {
+            var ellipse = MakeEllipse(xCenter, yCenter, xRadius, yRadius);
+
+            using (var brush = new SolidColorBrush(_renderTarget, DrawColor))
                 _renderTarget.DrawEllipse(ellipse, brush);
         }
 
-        public void FillCircle(float x, float y, float radius)
+        public void FillEllipse(float xCenter, float yCenter, float xRadius, float yRadius)
         {
-            var ellipse = MakeEllipse(x, y, radius);
+            var ellipse = MakeEllipse(xCenter, yCenter, xRadius, yRadius);
 
-            using (var brush = new SolidColorBrush(_renderTarget, Color4.Black))
+            using (var brush = new SolidColorBrush(_renderTarget, DrawColor))
                 _renderTarget.FillEllipse(ellipse, brush);
         }
 
-        public void FillDrawCircle(float x, float y, float radius)
+        public void FillDrawEllipse(float xCenter, float yCenter, float xRadius, float yRadius)
         {
-            FillCircle(x, y, radius);
-            DrawCircle(x, y, radius);
+            FillEllipse(xCenter, yCenter, xRadius, yRadius);
+            DrawEllipse(xCenter, yCenter, xRadius, yRadius);
         }
 
-        private Ellipse MakeEllipse(float x, float y, float radius)
+        public void DrawLine(float xFrom, float yFrom, float xTo, float yTo, float? strokeWidth = null)
         {
-            var vector = MakeVector2(x, y);
+            var fromVector = MakeVector2(xFrom, yFrom);
+            var toVector = MakeVector2(xTo, yTo);
 
-            return new Ellipse(vector, radius, radius);
+            using (var brush = new SolidColorBrush(_renderTarget, DrawColor))
+            {
+                // TODO: Get Direct2D 1.1 NuGet packages and use StrokeStyle1 to actually draw 1px 
+                strokeWidth = strokeWidth == null ? 2.0f : ScaleMagnitude((float) strokeWidth);
+
+                _renderTarget.DrawLine(fromVector, toVector, brush, (float) strokeWidth);
+            }
         }
 
-        private static float TransformCoordinateIdentity(float coordinate)
+        private static float TransformIdentity(float value)
         {
-            return coordinate;
+            return value;
+        }
+
+        private Ellipse MakeEllipse(float xCenter, float yCenter, float xRadius, float yRadius)
+        {
+            var centerVector = MakeVector2(xCenter, yCenter);
+
+            xRadius = ScaleXMagnitude(xRadius);
+            yRadius = ScaleYMagnitude(yRadius);
+
+            return new Ellipse(centerVector, xRadius, yRadius);
         }
 
         private Vector2 MakeVector2(float x, float y)
         {
-            x = TransformXCoordinate(x);
-            y = TransformYCoordinate(y);
+            x = TranslateXCoordinate(x);
+            y = TranslateYCoordinate(y);
 
             return new Vector2(x, y);
         }

@@ -6,5 +6,5 @@ using System.Threading.Tasks;
 
 namespace Empee.Domain.Infrastructure
 {
-    public delegate void RenderingEventHandler(object sender, RenderingEventArgs renderingEventArgs);
+    public delegate void RenderingEventHandler(object sender, RenderingEventArgs e);
 }

@@ -2,5 +2,5 @@
 
 namespace Empee.Domain.Infrastructure
 {
-    public delegate void StoppingEventHandler(object sender, EventArgs eventArgs);
+    public delegate void StoppingEventHandler(object sender, EventArgs e);
 }

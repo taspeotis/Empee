@@ -21,7 +21,7 @@ using RectangleF = SharpDX.RectangleF;
 namespace Empee.Domain.Providers
 {
     [Export(typeof (IRenderService))]
-    internal sealed class RenderService : IRenderService
+    internal sealed class RenderService : IRenderService, IDisposable
     {
         private const SwapChainFlags DefaultSwapChainFlags = SwapChainFlags.AllowModeSwitch;
 
@@ -39,6 +39,45 @@ namespace Empee.Domain.Providers
             executionLoopService.Starting += ExecutionLoopServiceOnStarting;
             executionLoopService.Executing += ExecutionLoopServiceOnExecuting;
             executionLoopService.Stopping += ExecutionLoopServiceOnStopping;
+        }
+
+        public void Dispose()
+        {
+            CleanUp();
+        }
+
+        public void ToggleFullScreen()
+        {
+            if (_swapChain.IsFullScreen)
+            {
+                _swapChain.IsFullScreen = false;
+
+                // TODO: Come back from previous dimensions
+                // Come back from previous dimensions
+                _renderControl.Size = new Size(400, 400);
+            }
+            else
+            {
+                var screen = Screen.FromControl(_renderControl);
+
+                _renderControl.ClientSize = screen.Bounds.Size;
+                // TODO: If we're going full screen, first resize the window the the full size
+                // of the monitor it's on. Also, store the Rectangle for going un-full-screen.    
+
+                _swapChain.IsFullScreen = true;
+            }
+        }
+
+        public event RenderingEventHandler Rendering;
+
+        public void Resize()
+        {
+            DisposeRenderTarget();
+
+            _swapChain.ResizeBuffers(0, 0, 0, Format.Unknown, DefaultSwapChainFlags);
+
+            using (var backBuffer = Surface.FromSwapChain(_swapChain, 0))
+                CreateRenderTarget(backBuffer);
         }
 
         private void ExecutionLoopServiceOnStarting(object sender, StartingEventArgs startingEventArgs)
@@ -128,46 +167,12 @@ namespace Empee.Domain.Providers
                 dxgiFactory.MakeWindowAssociation(_renderControl.Handle, WindowAssociationFlags.IgnoreAltEnter);
         }
 
-        public void ToggleFullScreen()
-        {
-            if (_swapChain.IsFullScreen)
-            {
-                _swapChain.IsFullScreen = false;
-
-                // TODO: Come back from previous dimensions
-                // Come back from previous dimensions
-                _renderControl.Size = new Size(400, 400);
-            }
-            else
-            {
-                var screen = Screen.FromControl(_renderControl);
-
-                _renderControl.ClientSize = screen.Bounds.Size;
-                // TODO: If we're going full screen, first resize the window the the full size
-                // of the monitor it's on. Also, store the Rectangle for going un-full-screen.    
-
-                _swapChain.IsFullScreen = true;
-            }
-        }
-
-        public event RenderingEventHandler Rendering;
-
         private void OnRendering(RenderingEventArgs renderingEventArgs)
         {
             var eventHandler = Rendering;
 
             if (eventHandler != null)
                 eventHandler(this, renderingEventArgs);
-        }
-
-        public void Resize()
-        {
-            DisposeRenderTarget();
-
-            _swapChain.ResizeBuffers(0, 0, 0, Format.Unknown, DefaultSwapChainFlags);
-
-            using (var backBuffer = Surface.FromSwapChain(_swapChain, 0))
-                CreateRenderTarget(backBuffer);
         }
 
         private void ExecutionLoopServiceOnExecuting(object sender, ExecutingEventArgs executingEventArgs)
@@ -200,6 +205,11 @@ namespace Empee.Domain.Providers
 
         private void ExecutionLoopServiceOnStopping(object sender, EventArgs eventArgs)
         {
+            CleanUp();
+        }
+
+        private void CleanUp()
+        {
             BreakWindowAssociation();
             DisposeRenderTarget();
             DisposeSwapChain();
@@ -208,8 +218,11 @@ namespace Empee.Domain.Providers
 
         private void BreakWindowAssociation()
         {
-            using (var dxgiFactory = _swapChain.GetParent<DXGIFactory>())
-                dxgiFactory.MakeWindowAssociation(IntPtr.Zero, WindowAssociationFlags.None);
+            if (_swapChain != null)
+            {
+                using (var dxgiFactory = _swapChain.GetParent<DXGIFactory>())
+                    dxgiFactory.MakeWindowAssociation(IntPtr.Zero, WindowAssociationFlags.None);
+            }
         }
 
         private void DisposeRenderTarget()
