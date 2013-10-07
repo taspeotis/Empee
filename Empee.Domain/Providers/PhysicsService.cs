@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.Composition;
+using System.Linq;
 using Empee.Domain.Contracts;
 using Empee.Domain.Extensions;
 using Empee.Domain.Infrastructure;
@@ -216,36 +217,27 @@ namespace Empee.Domain.Providers
                         .SetFrom(vertex1.X, vertex1.Y)
                         .SetTo(vertex2.X, vertex2.Y);
                 }
-/*
+
                 case ShapeType.Polygon:
                 {
                     var polygonShape = (PolygonShape) fixture.Shape;
                     var vertices = polygonShape.Vertices;
+                    var points = vertices.Select(v => TransformVector(bodyTransform, v));
 
-                    var points = vertices
-                        .Select(v => TransformVector(bodyTransform, v))
-                        .Select(v => new PointF(v.X, v.Y));
-
-                    drawingService.DrawPolygon(points);
-
-                    break;
+                    return drawingService.Polygon()
+                        .SetPoints(points);
                 }
 
                 case ShapeType.Chain:
                 {
                     var chainShape = (ChainShape) fixture.Shape;
                     var vertices = chainShape.Vertices;
+                    var points = vertices.Select(v => TransformVector(bodyTransform, v));
 
-                    for (var x = 0; x < vertices.Count - 1; ++x)
-                    {
-                        var vertex1 = MathUtils.Mul(ref bodyTransform, vertices[x]);
-                        var vertex2 = MathUtils.Mul(ref bodyTransform, vertices[x + 1]);
-
-                        drawingService.DrawLine(vertex1.X, vertex1.Y, vertex2.X, vertex2.Y);
-                    }
-
-                    break;
-                }*/
+                    return drawingService.Polygon()
+                        .SetPoints(points)
+                        .SetOpen(true);
+                }
             }
 
             return null;

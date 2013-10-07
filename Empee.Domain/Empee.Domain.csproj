@@ -69,11 +69,13 @@
     <Compile Include="Contracts\ILineDrawingService.cs" />
     <Compile Include="Contracts\IOutlineDrawingService.cs" />
     <Compile Include="Contracts\IPhysicsService.cs" />
+    <Compile Include="Contracts\IPolygonDrawingService.cs" />
     <Compile Include="Contracts\IRenderService.cs" />
     <Compile Include="Extensions\ICircleDrawingServiceExtensions.cs" />
     <Compile Include="Extensions\IEllipseDrawingServiceExtensions.cs" />
     <Compile Include="Extensions\ILineDrawingServiceExtensions.cs" />
     <Compile Include="Extensions\IOutlineDrawingServiceExtensions.cs" />
+    <Compile Include="Extensions\IPolygonDrawingServiceExtensions.cs" />
     <Compile Include="Extensions\RenderTargetExtensions.cs" />
     <Compile Include="Infrastructure\ExecutingEventArgs.cs" />
     <Compile Include="Infrastructure\ExecutingEventHandler.cs" />
@@ -96,6 +98,7 @@
     <Compile Include="Providers\LineDrawingService.cs" />
     <Compile Include="Providers\OutlineDrawingService.cs" />
     <Compile Include="Providers\PhysicsService.cs" />
+    <Compile Include="Providers\PolygonDrawingService.cs" />
     <Compile Include="Providers\RenderService.cs" />
   </ItemGroup>
   <ItemGroup>

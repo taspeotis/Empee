@@ -7,5 +7,7 @@
         IEllipseDrawingService Ellipse();
 
         ILineDrawingService Line();
+
+        IPolygonDrawingService Polygon();
     }
 }

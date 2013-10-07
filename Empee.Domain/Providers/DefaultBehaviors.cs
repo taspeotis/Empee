@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.Composition;
+using System.Drawing;
 using System.Windows.Forms;
 using Empee.Domain.Contracts;
 
@@ -39,7 +40,7 @@ namespace Empee.Domain.Providers
 
         public void AcceptDefaultRenderControl(string controlText)
         {
-            _context.RenderControl = new Form {Text = controlText};
+            _context.RenderControl = new Form {Text = controlText, Size = new Size(800, 480)};
         }
 
         public void AcceptDefaultResize()
