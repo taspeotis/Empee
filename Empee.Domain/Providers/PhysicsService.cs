@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.Composition;
 using Empee.Domain.Contracts;
+using Empee.Domain.Extensions;
 using Empee.Domain.Infrastructure;
 using FarseerPhysics.Collision.Shapes;
 using FarseerPhysics.Common;
@@ -17,6 +18,7 @@ namespace Empee.Domain.Providers
         private readonly IContext _context;
 
         private Body _circleBody;
+        private Body _polygonBody;
         private Body _ground;
         private World _world;
 
@@ -41,6 +43,21 @@ namespace Empee.Domain.Providers
 
             _circleBody = BodyFactory.CreateCircle(_world, 1.0f, 1.0f, new Vector2(0, -50.0f));
             _circleBody.BodyType = BodyType.Dynamic;
+
+            Vector2[] vectors = 
+            {
+                 new Vector2(2.5f,0) 
+                ,new Vector2(1.5f,3.5f) 
+                ,new Vector2(-1.5f,2.5f) 
+                ,new Vector2(-2.5f,0)
+                ,new Vector2(-1.5f,-1.0f)
+                ,new Vector2(1.5f,-1.0f)
+            };
+
+            var vertices = new Vertices(vectors);
+
+            _polygonBody = BodyFactory.CreatePolygon(_world, vertices, 1.0f, new Vector2(0, -30.0f));
+            _polygonBody.BodyType = BodyType.Dynamic;
 
             // Create the ground fixture
             _ground = BodyFactory.CreateEdge(_world, new Vector2(-1000, 0), new Vector2(1000, 0));
@@ -130,7 +147,15 @@ namespace Empee.Domain.Providers
             var bodyColor = GetBodyColor(body);
 
             foreach (var fixture in body.FixtureList)
-                RenderFixture(drawingService, fixture, bodyTransform, bodyColor);
+            {
+                var outlineDrawingService = GetFixtureOutlineDrawingService(drawingService, fixture, bodyTransform);
+
+                if (outlineDrawingService != null)
+                {
+                    outlineDrawingService.OutlineColor = bodyColor;
+                    outlineDrawingService.Outline();
+                }
+            }
         }
 
         private static Transform GetBodyTransform(Body body)
@@ -165,38 +190,44 @@ namespace Empee.Domain.Providers
             return DefaultShapeColor;
         }
 
-        private static void RenderFixture(IDrawingService drawingService,
-            Fixture fixture, Transform bodyTransform, Color4 bodyColor)
+        private static IOutlineDrawingService GetFixtureOutlineDrawingService(
+            IDrawingService drawingService, Fixture fixture, Transform bodyTransform)
         {
-            drawingService.DrawColor = bodyColor;
-
             switch (fixture.ShapeType)
             {
                 case ShapeType.Circle:
                 {
                     var circleShape = (CircleShape) fixture.Shape;
-                    var center = MathUtils.Mul(ref bodyTransform, circleShape.Position);
+                    var center = TransformVector(bodyTransform, circleShape.Position);
                     var radius = circleShape.Radius;
 
-                    drawingService.DrawCircle(center.X, center.Y, radius);
-
-                    break;
+                    return drawingService.Circle()
+                        .SetCircleCenter(center.X, center.Y)
+                        .SetRadius(radius);
                 }
-
+                    
                 case ShapeType.Edge:
                 {
                     var edgeShape = (EdgeShape) fixture.Shape;
-                    var vertex1 = MathUtils.Mul(ref bodyTransform, edgeShape.Vertex1);
-                    var vertex2 = MathUtils.Mul(ref bodyTransform, edgeShape.Vertex2);
+                    var vertex1 = TransformVector(bodyTransform, edgeShape.Vertex1);
+                    var vertex2 = TransformVector(bodyTransform, edgeShape.Vertex2);
 
-                    drawingService.DrawLine(vertex1.X, vertex1.Y, vertex2.X, vertex2.Y);
-                    // TODO: Render Ghost Vertices (v0, v3)
-
-                    break;
+                    return drawingService.Line()
+                        .SetFrom(vertex1.X, vertex1.Y)
+                        .SetTo(vertex2.X, vertex2.Y);
                 }
-
+/*
                 case ShapeType.Polygon:
                 {
+                    var polygonShape = (PolygonShape) fixture.Shape;
+                    var vertices = polygonShape.Vertices;
+
+                    var points = vertices
+                        .Select(v => TransformVector(bodyTransform, v))
+                        .Select(v => new PointF(v.X, v.Y));
+
+                    drawingService.DrawPolygon(points);
+
                     break;
                 }
 
@@ -214,8 +245,15 @@ namespace Empee.Domain.Providers
                     }
 
                     break;
-                }
+                }*/
             }
+
+            return null;
+        }
+
+        private static Vector2 TransformVector(Transform transform, Vector2 vector)
+        {
+            return MathUtils.Mul(ref transform, vector);
         }
     }
 }

@@ -1,94 +1,34 @@
-﻿using System;
-using Empee.Domain.Contracts;
-using SharpDX;
+﻿using Empee.Domain.Contracts;
 using SharpDX.Direct2D1;
 
 namespace Empee.Domain.Providers
 {
-    internal sealed class DrawingService : IDrawingService
+    internal sealed class DrawingService : DrawingAttributes, IDrawingService
     {
         private readonly RenderTarget _renderTarget;
 
-        private Func<float, float> _scaleMagnitude = TransformIdentity;
-        private Func<float, float> _scaleXMagnitude = TransformIdentity;
-        private Func<float, float> _scaleYMagnitude = TransformIdentity;
-        private Func<float, float> _translateXCoordinate = TransformIdentity;
-        private Func<float, float> _translateYCoordinate = TransformIdentity;
-
-        public DrawingService(RenderTarget renderTarget)
+        internal DrawingService(RenderTarget renderTarget)
         {
             _renderTarget = renderTarget;
         }
 
-        public Color4 DrawColor { get; set; }
-
-        public Func<float, float> ScaleMagnitude
+        public ICircleDrawingService Circle()
         {
-            get { return _scaleMagnitude; }
-            set { _scaleMagnitude = value ?? TransformIdentity; }
+            return new CircleDrawingService(Ellipse());
         }
 
-        public Func<float, float> ScaleXMagnitude
+        public IEllipseDrawingService Ellipse()
         {
-            get { return _scaleXMagnitude; }
-            set { _scaleXMagnitude = value ?? TransformIdentity; }
+            return new EllipseDrawingService(this, _renderTarget);
         }
 
-        public Func<float, float> ScaleYMagnitude
+        public ILineDrawingService Line()
         {
-            get { return _scaleYMagnitude; }
-            set { _scaleYMagnitude = value ?? TransformIdentity; }
+            return new LineDrawingService(this, _renderTarget);
         }
 
-        public Func<float, float> TranslateXCoordinate
-        {
-            get { return _translateXCoordinate; }
-            set { _translateXCoordinate = value ?? TransformIdentity; }
-        }
+        /*
 
-        public Func<float, float> TranslateYCoordinate
-        {
-            get { return _translateYCoordinate; }
-            set { _translateYCoordinate = value ?? TransformIdentity; }
-        }
-
-        public void DrawCircle(float xCenter, float yCenter, float radius)
-        {
-            DrawEllipse(xCenter, yCenter, radius, radius);
-        }
-
-        public void FillCircle(float xCenter, float yCenter, float radius)
-        {
-            FillEllipse(xCenter, yCenter, radius, radius);
-        }
-
-        public void FillDrawCircle(float xCenter, float yCenter, float radius)
-        {
-            FillCircle(xCenter, yCenter, radius);
-            DrawCircle(xCenter, yCenter, radius);
-        }
-
-        public void DrawEllipse(float xCenter, float yCenter, float xRadius, float yRadius)
-        {
-            var ellipse = MakeEllipse(xCenter, yCenter, xRadius, yRadius);
-
-            using (var brush = new SolidColorBrush(_renderTarget, DrawColor))
-                _renderTarget.DrawEllipse(ellipse, brush);
-        }
-
-        public void FillEllipse(float xCenter, float yCenter, float xRadius, float yRadius)
-        {
-            var ellipse = MakeEllipse(xCenter, yCenter, xRadius, yRadius);
-
-            using (var brush = new SolidColorBrush(_renderTarget, DrawColor))
-                _renderTarget.FillEllipse(ellipse, brush);
-        }
-
-        public void FillDrawEllipse(float xCenter, float yCenter, float xRadius, float yRadius)
-        {
-            FillEllipse(xCenter, yCenter, xRadius, yRadius);
-            DrawEllipse(xCenter, yCenter, xRadius, yRadius);
-        }
 
         public void DrawLine(float xFrom, float yFrom, float xTo, float yTo, float? strokeWidth = null)
         {
@@ -97,34 +37,65 @@ namespace Empee.Domain.Providers
 
             using (var brush = new SolidColorBrush(_renderTarget, DrawColor))
             {
-                // TODO: Get Direct2D 1.1 NuGet packages and use StrokeStyle1 to actually draw 1px 
+                // TODO: Get Direct2D 1.1 use StrokeStyle1 to actually draw 1px
                 strokeWidth = strokeWidth == null ? 2.0f : ScaleMagnitude((float) strokeWidth);
 
                 _renderTarget.DrawLine(fromVector, toVector, brush, (float) strokeWidth);
             }
         }
 
-        private static float TransformIdentity(float value)
+        public void DrawPolygon(IEnumerable<PointF> points)
         {
-            return value;
+            Polygon(points, FigureBegin.Hollow, FigureEnd.Closed, (rt, g, b) => rt.DrawGeometry(g, b));
         }
 
-        private Ellipse MakeEllipse(float xCenter, float yCenter, float xRadius, float yRadius)
+        public void FillPolygon(IEnumerable<PointF> points)
         {
-            var centerVector = MakeVector2(xCenter, yCenter);
-
-            xRadius = ScaleXMagnitude(xRadius);
-            yRadius = ScaleYMagnitude(yRadius);
-
-            return new Ellipse(centerVector, xRadius, yRadius);
+            Polygon(points, FigureBegin.Filled, FigureEnd.Closed, (rt, g, b) => rt.FillGeometry(g, b));
         }
 
+        public void FillDrawPolygon(IEnumerable<PointF> points)
+        {
+            var pointsList = points as IList<PointF> ?? points.ToList();
+
+            FillPolygon(pointsList);
+            DrawPolygon(pointsList);
+        }
+
+        private void Polygon(
+            IEnumerable<PointF> points,
+            FigureBegin figureBegin, FigureEnd figureEnd,
+            Action<RenderTarget, Geometry, Brush> geometryAction)
+        {
+            var vectors = points.Select(p => MakeVector2(p.X, p.Y)).ToList();
+
+            using (var direct2DFactory = _renderTarget.Factory)
+            using (var pathGeometry = new PathGeometry(direct2DFactory))
+            {
+                using (var geometrySink = pathGeometry.Open())
+                {
+                    var firstVector = vectors.First();
+                    var remainingVectors = vectors.Skip(1).ToArray();
+
+                    geometrySink.SetFillMode(FillMode.Winding);
+                    geometrySink.BeginFigure(firstVector, figureBegin);
+                    geometrySink.AddLines(remainingVectors);
+                    geometrySink.EndFigure(figureEnd);
+                    geometrySink.Close();
+                }
+
+                using (var brush = new SolidColorBrush(_renderTarget, DrawColor))
+                    geometryAction(_renderTarget, pathGeometry, brush);
+            }
+        }
+        
         private Vector2 MakeVector2(float x, float y)
         {
             x = TranslateXCoordinate(x);
             y = TranslateYCoordinate(y);
 
             return new Vector2(x, y);
-        }
+        }*/
+
     }
 }

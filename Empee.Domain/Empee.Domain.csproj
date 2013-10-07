@@ -59,24 +59,42 @@
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Contracts\ICircleDrawingService.cs" />
     <Compile Include="Contracts\IContext.cs" />
     <Compile Include="Contracts\IDefaultBehaviors.cs" />
     <Compile Include="Contracts\IDrawingService.cs" />
+    <Compile Include="Contracts\IEllipseDrawingService.cs" />
     <Compile Include="Contracts\IExecutionLoopService.cs" />
+    <Compile Include="Contracts\IFillDrawingService.cs" />
+    <Compile Include="Contracts\ILineDrawingService.cs" />
+    <Compile Include="Contracts\IOutlineDrawingService.cs" />
     <Compile Include="Contracts\IPhysicsService.cs" />
     <Compile Include="Contracts\IRenderService.cs" />
+    <Compile Include="Extensions\ICircleDrawingServiceExtensions.cs" />
+    <Compile Include="Extensions\IEllipseDrawingServiceExtensions.cs" />
+    <Compile Include="Extensions\ILineDrawingServiceExtensions.cs" />
+    <Compile Include="Extensions\IOutlineDrawingServiceExtensions.cs" />
+    <Compile Include="Extensions\RenderTargetExtensions.cs" />
     <Compile Include="Infrastructure\ExecutingEventArgs.cs" />
     <Compile Include="Infrastructure\ExecutingEventHandler.cs" />
+    <Compile Include="Extensions\IDrawingAttributesExtensions.cs" />
     <Compile Include="Infrastructure\RenderingEventArgs.cs" />
     <Compile Include="Infrastructure\RenderingEventHandler.cs" />
     <Compile Include="Infrastructure\StartingEventArgs.cs" />
     <Compile Include="Infrastructure\StartingEventHandler.cs" />
     <Compile Include="Infrastructure\StoppingEventHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Providers\CircleDrawingService.cs" />
     <Compile Include="Providers\Context.cs" />
     <Compile Include="Providers\DefaultBehaviors.cs" />
+    <Compile Include="Providers\DrawingAttributes.cs" />
     <Compile Include="Providers\DrawingService.cs" />
+    <Compile Include="Providers\EllipseDrawingService.cs" />
     <Compile Include="Providers\ExecutionLoopService.cs" />
+    <Compile Include="Providers\FillableDrawableService.cs" />
+    <Compile Include="Contracts\IDrawingAttributes.cs" />
+    <Compile Include="Providers\LineDrawingService.cs" />
+    <Compile Include="Providers\OutlineDrawingService.cs" />
     <Compile Include="Providers\PhysicsService.cs" />
     <Compile Include="Providers\RenderService.cs" />
   </ItemGroup>
